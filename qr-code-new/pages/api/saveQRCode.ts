@@ -1,6 +1,5 @@
 import type { NextApiRequest, NextApiResponse } from 'next'
 import clientPromise from '../../lib/mongodb'
-import QRCode from '../../models/QRCode'
 
 export default async function handler(
   req: NextApiRequest,
@@ -16,6 +15,7 @@ export default async function handler(
       const result = await db.collection('qrcodes').insertOne({
         employeeEmail,
         qrCodeData,
+        scanCount: 0,
         createdAt: new Date(),
       })
 

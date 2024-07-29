@@ -1,5 +1,4 @@
 'use client'
-
 import { useState } from 'react'
 import QRCode from 'qrcode'
 
@@ -7,24 +6,40 @@ export default function QRCodeGenerator() {
   const [email, setEmail] = useState('')
   const [qrCodeUrl, setQrCodeUrl] = useState('')
   const [qrCodeId, setQrCodeId] = useState('')
+  const [error, setError] = useState('')
 
   const generateQRCode = async () => {
     try {
+      setError('') // Clear any previous errors
       // Generate a consistent ID based on the email
       const emailHash = await hashEmail(email)
       setQrCodeId(emailHash)
-
       // The URL should point to your review page with the email hash
       const reviewUrl = `https://apex-reviews.com/${emailHash}`
       const qrCodeDataUrl = await QRCode.toDataURL(reviewUrl)
       setQrCodeUrl(qrCodeDataUrl)
 
-      // Here you would typically save or update the QR code info in your database
-      console.log('Saving/Updating QR code info:', { id: emailHash, email, url: reviewUrl })
+      // Save QR code info to the database
+      const response = await fetch('/api/saveQRCode', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          employeeEmail: email,
+          qrCodeData: reviewUrl,
+        }),
+      })
 
-      // TODO: Implement API call to save/update QR code info
+      if (!response.ok) {
+        throw new Error('Failed to save QR code data')
+      }
+
+      const result = await response.json()
+      console.log('QR code saved successfully:', result)
     } catch (error) {
-      console.error('Error generating QR code:', error)
+      console.error('Error generating or saving QR code:', error)
+      setError('Failed to generate or save QR code. Please try again.')
     }
   }
 
@@ -54,6 +69,7 @@ export default function QRCodeGenerator() {
           Generate QR Code
         </button>
       </div>
+      {error && <p className="text-red-500 mt-2">{error}</p>}
       {qrCodeUrl && (
         <div className="mt-4 flex flex-col items-center">
           <img src={qrCodeUrl} alt="Generated QR Code" />
